@@ -2,5 +2,19 @@
 version = 1
 
 [[package]]
+name = "alexandria_storage"
+version = "0.3.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria#800f5ad217847b5ded63c0302a444161766ee9d6"
+
+[[package]]
+name = "openzeppelin"
+version = "0.8.1"
+source = "git+https://github.com/openzeppelin/cairo-contracts#2815498b82e7cbc163cb9af9895bd573213d0f94"
+
+[[package]]
 name = "wantit"
 version = "0.1.0"
+dependencies = [
+ "alexandria_storage",
+ "openzeppelin",
+]

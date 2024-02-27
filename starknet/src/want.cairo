@@ -7,15 +7,19 @@ trait IWantIt<TContractState> {
     // TODO: implement a lfgoooo_from.
     fn payout(ref self: TContractState, token_addresses: Array<ContractAddress>);
     // Get the title of the event
-    fn title(self: @TContractState) -> felt252;
+    fn title(self: @TContractState) -> ByteArray;
     // Get the wish of the event
-    fn wish(self: @TContractState) -> felt252;
+    fn wish(self: @TContractState) -> ByteArray;
+    // Get the success criteria of the event
+    fn success_criteria(self: @TContractState) -> ByteArray;
     // Get the oracle of the event
     fn oracle(self: @TContractState) -> ContractAddress;
     // Get the recipients of the event
     fn recipients(self: @TContractState) -> Array<ContractAddress>;
     // Get the shares of the recipients of the event
     fn recipient_shares(self: @TContractState) -> Array<u256>;
+    // Get the completion status of the event
+    fn completed(self: @TContractState) -> bool;
     // This function 'should' return the funds in the pool to the
     // participants. However, this is likely much too expensive
     // due to the storage costs of all the participant addresses.
@@ -32,7 +36,7 @@ trait IWantIt<TContractState> {
 #[starknet::contract]
 mod WantPool {
   use core::result::ResultTrait;
-use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+  use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
   use starknet::{get_contract_address, get_caller_address, ContractAddress};
   use alexandria_storage::list::{List, ListTrait};
 
@@ -44,8 +48,9 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
 
   #[storage]
   struct Storage {
-    wish: felt252, // TODO: Use ByteArray
-    title: felt252, // TODO: Use ByteArray
+    wish: ByteArray,
+    title: ByteArray,
+    success_criteria: ByteArray,
     oracle: ContractAddress,
     recipients: List<ContractAddress>,
     // The sum of all shares cannot exceed 2^256
@@ -53,15 +58,19 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
     // TODO: remove this and replace with an indexing solution
     // Type: (UserAddress, TokenAddress) -> u256
     participation_tracker: LegacyMap<(ContractAddress, ContractAddress), u256>,
+    // Whether the event has been completed
+    completed: bool,
   }
 
   #[constructor]
   fn constructor(
     ref self: ContractState,
     // The title of the event
-    title: felt252,
+    title: ByteArray,
     // A short description of what is required to trigger the payout
-    wish: felt252,
+    wish: ByteArray,
+    // The success criteria for the event which results in the payout
+    success_criteria: ByteArray,
     // The accounts which will be rewarded for the event occuring
     recipients: Array<ContractAddress>,
     // The share of the total pool each recipient will receive
@@ -81,12 +90,20 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
   #[abi(embed_v0)]
   impl WantIMPL of super::IWantIt<ContractState> {
 
-    fn title(self: @ContractState) -> felt252 {
+    fn title(self: @ContractState) -> ByteArray {
       return self.title.read();
     }
 
-    fn wish(self: @ContractState) -> felt252 {
+    fn wish(self: @ContractState) -> ByteArray {
       return self.wish.read();
+    }
+
+    fn success_criteria(self: @ContractState) -> ByteArray {
+      return self.success_criteria.read();
+    }
+
+    fn completed(self: @ContractState) -> bool {
+      return self.completed.read();
     }
 
     fn oracle(self: @ContractState) -> ContractAddress {
@@ -148,6 +165,8 @@ use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTr
           IERC20Dispatcher{ contract_address: token_address }.transfer(recipients[j], amount);
         };
       };
+
+      self.completed.write(true);
     }
   }
 }

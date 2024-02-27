@@ -1,10 +1,21 @@
 use starknet::ContractAddress;
+use starknet::Felt252TryIntoContractAddress;
 
 #[starknet::interface]
 trait IWantIt<TContractState> {
     fn lfgoooo(ref self: TContractState, token_address: ContractAddress, amount: u256);
     // TODO: implement a lfgoooo_from.
     fn payout(ref self: TContractState, token_addresses: Array<ContractAddress>);
+    // Get the title of the event
+    fn title(self: @TContractState) -> felt252;
+    // Get the wish of the event
+    fn wish(self: @TContractState) -> felt252;
+    // Get the oracle of the event
+    fn oracle(self: @TContractState) -> ContractAddress;
+    // Get the recipients of the event
+    fn recipients(self: @TContractState) -> Array<ContractAddress>;
+    // Get the shares of the recipients of the event
+    fn recipient_shares(self: @TContractState) -> Array<u256>;
     // This function 'should' return the funds in the pool to the
     // participants. However, this is likely much too expensive
     // due to the storage costs of all the participant addresses.
@@ -19,8 +30,9 @@ trait IWantIt<TContractState> {
 }
 
 #[starknet::contract]
-mod want_pool {
-  use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
+mod WantPool {
+  use core::result::ResultTrait;
+use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
   use starknet::{get_contract_address, get_caller_address, ContractAddress};
   use alexandria_storage::list::{List, ListTrait};
 
@@ -69,6 +81,26 @@ mod want_pool {
   #[abi(embed_v0)]
   impl WantIMPL of super::IWantIt<ContractState> {
 
+    fn title(self: @ContractState) -> felt252 {
+      return self.title.read();
+    }
+
+    fn wish(self: @ContractState) -> felt252 {
+      return self.wish.read();
+    }
+
+    fn oracle(self: @ContractState) -> ContractAddress {
+      return self.oracle.read();
+    }
+
+    fn recipients(self: @ContractState) -> Array<ContractAddress> {
+      return self.recipients.read().array().unwrap();
+    }
+
+    fn recipient_shares(self: @ContractState) -> Array<u256> {
+      return self.recipient_shares.read().array().unwrap();
+    }
+
     fn lfgoooo(ref self: ContractState, token_address: ContractAddress, amount: u256) {
       let this = get_contract_address();
       let sender = get_caller_address();
@@ -110,6 +142,8 @@ mod want_pool {
             break;
           }
           let recipient_shares = recipient_shares[j];
+          // TODO: Double check for precision errors
+          // Might error out if we have consistent round up
           let amount = (total_amount * recipient_shares) / total_shares;
           IERC20Dispatcher{ contract_address: token_address }.transfer(recipients[j], amount);
         };

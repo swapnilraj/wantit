@@ -1,9 +1,10 @@
 import React from "react";
 // import { useBlock } from "@starknet-react/core";
-import { Box, Button, Divider, Input, Link, Stack, Typography } from "@mui/joy";
+import { Box, Button, Divider, Input, Stack, Typography } from "@mui/joy";
 import { Event } from "./types";
 import Dialog from "./components/ui/Dialog";
 import { NumericFormat, NumericFormatProps } from 'react-number-format';
+import { IdentityLink } from "./IdentityLink";
 
 
 interface CustomProps {
@@ -11,12 +12,10 @@ interface CustomProps {
     name: string;
 }
 
-
 // The pools props is an event
 interface PoolProps {
     event: Event;
 }
-
 
 const NumericFormatAdapter = React.forwardRef<NumericFormatProps, CustomProps>(
     function NumericFormatAdapter(props, ref) {
@@ -51,6 +50,29 @@ const NumericFormatAdapter = React.forwardRef<NumericFormatProps, CustomProps>(
 function EventPool({ event }: PoolProps) {
     const [value, setValue] = React.useState('1320');
     const totalProportions = event.payouts.reduce((acc, payout) => acc + payout.proportion, 0);
+    let resolutionStrategy;
+    switch (event.resolutionStrategy.type) {
+        case 'coordinator':
+            resolutionStrategy =
+                <Box>
+                    <Typography>This event is managed by an unkown address. Please carefully check the legitimacy of the address.</Typography>
+                    <Typography>Address: <IdentityLink identity={event.resolutionStrategy.coordinator} /></Typography>
+                </Box>;
+            break;
+        case 'UMA':
+            resolutionStrategy = <Box>
+                <Typography>This event is managed by the UMA optimistic offchain oracle with a dispute resolution system. Disputes are resolved by the vote of the UMA DAO and protected by the UMA treasury.</Typography>
+                <Typography>Please note, there is no specific address or SNID for UMA resolution as it is a decentralized process.</Typography>
+            </Box>;
+            break;
+        case 'DAO':
+            resolutionStrategy = <Box>
+                <Typography>This event is managed by a DAO. The DAO is a contract controlled by a DAO vote.</Typography>
+                <Typography>DAO Contract: <IdentityLink identity={event.resolutionStrategy.DAO} /></Typography>
+            </Box>;
+            break;
+    }
+
     return (
         <Stack direction="row" justifyContent="space-between" alignItems="center" className="px-4 py-2" sx={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', margin: '10px', backgroundColor: '#f9f9f9' }}>
             <Stack spacing={2}>
@@ -87,13 +109,17 @@ function EventPool({ event }: PoolProps) {
                     <Stack direction="row" spacing={3} alignItems="left">
                         {event.payouts.map((payout, index) => <Stack direction="row" key={index} spacing={3} alignItems="left">
                             <Stack direction="row" spacing={1} alignItems="left">
-                                <Link href={"https://voyager.online/contract/" + payout.identity.address}><Typography>{payout.identity.ens || payout.identity.address}</Typography></Link>
+                                <IdentityLink identity={payout.identity} />
                                 <Typography>{(payout.proportion / totalProportions * 100).toFixed(0) + "/100"}</Typography>
                             </Stack>
                         </Stack>
                         )}
                     </Stack>
-
+                    <Divider />
+                    <Typography level="h4">Pool Resolution Strategy</Typography>
+                    <Stack direction="column" spacing={2} alignItems="left">
+                        {resolutionStrategy}
+                    </Stack>
                 </Stack>
             </Dialog>
 

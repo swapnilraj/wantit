@@ -1,21 +1,25 @@
 // An Identity is an onchain identifier and a potential ens name.
-export type Identity = { address: string; ens?: string };
+export type Identity = { address: string; snid?: string };
 
 // A PoolSize is a value in dollars and a quantity of participant addresses
 export type PoolSize = { value: number; quantity: number };
 
 // A resolution strategy is one of "coordinator", "UMA", or "DAO"
+// A Coordinator is an elected contract which can trigger the event completion at any time. They are a trusted entity in this case. Users should exercise due diligence and
+// check the legitimacy of these entities.
+// UMA is an optimistic offchain oracle with a dispute oracle system. Disputes are resolved by the vote of the UMA DAO and protected by the UMA treasury.
+// A DAO resolution strategy is simply a contract controlled by an elected dau vote.
 // This is made with a discriminated union
 export type ResolutionStrategy = CoordinatorResolutionStrategy | UMAResolutionStrategy | DAOResolutionStrategy;
 
 // A CoordinatorResolutionStrategy is simply a coordinator address
-export type CoordinatorResolutionStrategy = { type: "coordinator"; coordinator: string };
+export type CoordinatorResolutionStrategy = { type: "coordinator"; coordinator: Identity };
 
 // A UMAResolutionStrategy is an empty type
 export type UMAResolutionStrategy = { type: "UMA" };
 
 // A DAOResolutionStrategy is a DAO address
-export type DAOResolutionStrategy = { type: "DAO"; DAO: string };
+export type DAOResolutionStrategy = { type: "DAO"; DAO: Identity };
 
 // An event is a title, a description, an optional expiery block, a list of addresses and proportions, a PoolSize, and a ResolutionStrategy
 export interface Event {

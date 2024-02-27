@@ -7,7 +7,7 @@ interface IdentityLinkProps {
 }
 
 export const IdentityLink: React.FC<IdentityLinkProps> = ({ identity }) => (
-    <Link href={`https://voyager.online/contract/${identity.address}`}>
+    <Link href={`https://goerli.voyager.online/contract/${identity.address}`}>
         {identity.snid || identity.address}
     </Link>
 );

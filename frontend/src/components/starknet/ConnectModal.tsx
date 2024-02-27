@@ -8,7 +8,6 @@ import { Stack, Typography } from "@mui/joy";
 export default function ConnectModal() {
   const { connect, connectors } = useConnect();
 
-  console.log(connectors);
   return (
 
     <Dialog title="Connect Wallet">

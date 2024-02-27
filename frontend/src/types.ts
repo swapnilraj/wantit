@@ -1,9 +1,6 @@
 // An Identity is an onchain identifier and a potential ens name.
 export type Identity = { address: string; snid?: string };
 
-// A PoolSize is a value in dollars and a quantity of participant addresses
-export type PoolSize = { value: number; quantity: number };
-
 // A resolution strategy is one of "coordinator", "UMA", or "DAO"
 // A Coordinator is an elected contract which can trigger the event completion at any time. They are a trusted entity in this case. Users should exercise due diligence and
 // check the legitimacy of these entities.
@@ -26,7 +23,35 @@ export interface Event {
     title: string;
     description: string;
     expiery?: number;
-    payouts: { identity: Identity, proportion: number}[];
-    poolSize: PoolSize;
+    payouts: { identity: Identity, proportion: number }[];
+    poolBalances: ERC20Balances;
     resolutionStrategy: ResolutionStrategy;
+}
+
+// An ERC20Balance is a token address, a balance, and a name
+export type ERC20Balances = { [key: string]: bigint };
+
+
+
+// The ContractList types is the type returned by Voyager's class/contract fetch.
+// Here is an example
+// "items": [
+//    {
+//        "address": "0x06a443b413c0c9ec04a502976a77b7defc0e2949a0a5f6e2632212ce013e37b4",
+//        "creationTimestamp": 1709061225,
+//        "txnCount": "0",
+//        "starknetId": null,
+//        "contractAlias": null
+//    },
+//]
+export type ContractList = {
+    items: Contract[];
+}
+
+export type Contract = {
+    address: string;
+    creationTimestamp: number;
+    txnCount: string;
+    starknetId: string;
+    contractAlias: string;
 }

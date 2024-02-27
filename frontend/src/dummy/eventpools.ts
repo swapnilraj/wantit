@@ -9,7 +9,10 @@ const eventpools : Event[] = [
             { identity: { address: "0x123", snid: "mark.strk" }, proportion: 50 },
             { identity: { address: "0x456", snid: "elon.strk" }, proportion: 50 }
         ],
-        poolSize: { value: 345245223452, quantity: 23423425 },
+        poolBalances: {
+            "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d": 345245223452n,
+            "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7": 23423425n
+        },
         resolutionStrategy: { type: "coordinator", coordinator: {address: "0x789"} }
     },
     {
@@ -22,7 +25,10 @@ const eventpools : Event[] = [
             { identity: { address: "0xdef", snid: "ronwood.strk" }, proportion: 25 },
             { identity: { address: "0xghi", snid: "charliewatts.strk" }, proportion: 25 }
         ],
-        poolSize: { value: 234235234, quantity: 9803 },
+        poolBalances: {
+            "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d": 345245223452n,
+            "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7": 23423425n
+        },
         resolutionStrategy: { type: "coordinator", coordinator: {address: "0x789", snid: "resolutions.strk" }}
     },
 ]

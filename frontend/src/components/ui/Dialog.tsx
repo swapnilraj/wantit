@@ -19,7 +19,7 @@ export default function Dialog({
           width: "100%",
           height: "100%",
           backgroundColor: "rgba(0,0,0,0.5)",
-          zIndex: 1000,
+          zIndex: 3,
         }}
           onClick={() => setIsOpen(false)}
         />
@@ -28,7 +28,7 @@ export default function Dialog({
           top:"50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          zIndex: 1001,
+          zIndex: 4,
         }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="px-4 py-2">
               <Typography level="h4">{title}</Typography>

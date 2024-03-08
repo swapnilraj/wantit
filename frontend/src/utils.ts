@@ -27,6 +27,7 @@ export function isDecimalString(str: string): boolean {
 /**
  * Test if value is a free-from string text, and not a hex string or number string
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isText(val: any) {
     return typeof val === 'string' && !isHex(val) && !isStringWholeNumber(val);
 }
@@ -48,11 +49,13 @@ export const isStringWholeNumber = (value: string) => /^\d+$/.test(value);
 /**
  * Test if value is short text
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isShortText = (val: any) => isText(val) && isShortString(val);
 
 /**
  * Test if value is long text
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isLongText = (val: any) => isText(val) && !isShortString(val);
 
 /**

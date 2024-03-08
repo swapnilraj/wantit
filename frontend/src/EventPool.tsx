@@ -11,6 +11,7 @@ import { ERC20_ABI, GOERLI_TOKENS, LOADING_EVENT, POOL_ABI } from "./consts";
 import { constants } from "starknet";
 import strk_icon from "./assets/STRK.svg"
 import eth_icon from "./assets/ETH.png"
+import { stringFromByteArray } from "./utils";
 
 
 interface CustomProps {
@@ -46,47 +47,6 @@ const NumericFormatAdapter = React.forwardRef<NumericFormatProps, CustomProps>(
         );
     },
 );
-
-// Starknet cairo uses the ByteArray struct to represent a string.
-// The struct is given in the comment below.
-// pub struct ByteArray {
-//     // Full "words" of 31 bytes each. The first byte of each word in the byte array
-//     // is the most significant byte in the word.
-//     pub(crate) data: Array<bytes31>,
-//     // This felt252 actually represents a bytes31, with < 31 bytes.
-//     // It is represented as a felt252 to improve performance of building the byte array.
-//     // The number of bytes in here is specified in `pending_word_len`.
-//     // The first byte is the most significant byte among the `pending_word_len` bytes in the word.
-//     pub(crate) pending_word: felt252,
-//     // Should be in range [0, 30].
-//     pub(crate) pending_word_len: usize,
-// }
-// A byte31 object is just an integer in Javascript. 
-// The following function takes a ByteArray and deserializes it into a string.
-function byteArrayToString(byteArray: { data: bigint[], pending_word: bigint, pending_word_len: number }) {
-    // split each data word into 31 bytes
-    let result = "";
-    for (let i = 0; i < byteArray.data.length; i++) {
-        // The word needs to be split into 31 bytes. Bytes are 8 bits long.
-        let word = byteArray.data[i];
-        for (let j = 0; j < 31; j++) {
-            // The byte is the 8 least significant bits of the word.
-            const byte = word & 0xffn;
-            // Add the byte to the result
-            result += String.fromCharCode(Number(byte));
-            // Shift the word 8 bits to the right
-            word = word >> 8n;
-        }
-    }
-    // The pending word needs to be split into pending_word_len bytes.
-    let word = byteArray.pending_word;
-    for (let j = 0; j < byteArray.pending_word_len; j++) {
-        const byte = word & 0xffn;
-        result += String.fromCharCode(Number(byte));
-        word = word >> 8n;
-    }
-    return result;
-}
 
 function dec2hex(str: bigint) { // .toString(16) only works up to 2^53
     const dec = str.toString().split(''), sum = [], hex = [];
@@ -135,7 +95,7 @@ function EventPool({ contractAddress }: PoolProps) {
     if (titleData !== undefined) {
         // @ts-expect-error we know the data format
 
-        event.title = byteArrayToString(titleData).split("").reverse().join("");
+        event.title = stringFromByteArray(titleData);
     }
 
     // Get the description
@@ -147,7 +107,7 @@ function EventPool({ contractAddress }: PoolProps) {
     })
     if (descriptionData !== undefined) {
         // @ts-expect-error we know the data format
-        event.description = byteArrayToString(descriptionData);
+        event.description = stringFromByteArray(descriptionData);
     }
 
     // Get the payouts
@@ -294,7 +254,7 @@ function EventPool({ contractAddress }: PoolProps) {
             <Dialog title={event.title} buttonTitle="Believe">
                 <Stack direction="column" spacing={2} justifyContent="space-between" alignItems="left" className="px-4 py-2">
                     <Box sx={{ fontSize: '16px', color: '#666' }}>{event.description}</Box>
-
+                    <Typography>Pool Contract: <VoyagerLink identity={{address: contractAddress}} type={LinkType.Identity}/></Typography>
                     <Divider />
                     <Typography level="h4">Total Pool</Typography>
                     <Stack direction="row" spacing={3} alignItems="left">

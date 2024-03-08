@@ -5,6 +5,7 @@ import { CircularProgress, Button, Typography, Input, Textarea, Stack } from "@m
 import { EMPTY_BYTE_ARRAY, POOL_ABI, POOL_CLASS_HASH } from "./consts";
 import { CallData } from "starknet";
 import { ByteArray, byteArrayFromString, stringFromByteArray } from "./utils";
+import { LinkType, VoyagerLink } from "./VoyagerLink";
 
 // This type holds all the arguments for the constructor of the EventPool contract.
 type EventPoolConstructorArgs = {
@@ -98,7 +99,7 @@ const PoolCreator = () => {
                 </Stack>
             ) : deployedContractAddress ? (
                 <>
-                    <Typography>Contract Deployed Successfully!</Typography>
+                    <Typography>Contract <VoyagerLink identity={{address: deployedContractAddress}} type={LinkType.Identity}/>Deployed Successfully!</Typography>
                     <Typography>Address: {deployedContractAddress}</Typography>
                 </>
             ) :
@@ -123,7 +124,7 @@ const PoolCreator = () => {
                     />
                     <Typography>
                         What makes your event a success?
-                        This needs to be indisputable - water tight. Think it through, make sure it can't be misinterpreted. Succinct and measurable is better.
+                        This needs to be indisputable - water tight. Think it through, make sure it can&apost be misinterpreted. Succinct and measurable is better.
                     </Typography>
                     <Textarea
                         value={stringFromByteArray(formData["success_criteria"])}

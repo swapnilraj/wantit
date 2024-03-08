@@ -1,4 +1,5 @@
 import { Event } from "./types";
+import { ByteArray } from "./utils";
 
 export const POOL_CLASS_HASH = "0x0437330ab9d9f443e2f7a069a3a5420b4c083f4ce2481608910794315c4f1abd"
 
@@ -1244,4 +1245,17 @@ export const ERC20_ABI = [
 export const GOERLI_TOKENS = {
   "ETH": "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
   "STRK": "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
+}
+
+export const FILTER_POOLS = [
+  "0x008de6b0c9fbcf578729ea660ffcff90a87ea345b4ec0b4034f3e9da0d0a28e0",
+  "0x044068702e0a774c62dda3c50c69d3d463083c6587fb65c4c1ba721a9896fcaf",
+  "0x06a443b413c0c9ec04a502976a77b7defc0e2949a0a5f6e2632212ce013e37b4",
+  "0x07fa4242a9fa0397e882da87943d9fcd6ffd861e49dbd92cd8b8777fbbe545c9",
+]
+
+export const EMPTY_BYTE_ARRAY: ByteArray = {
+  data: [],
+  pending_word: 0,
+  pending_word_len: 0
 }

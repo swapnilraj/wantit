@@ -4,12 +4,14 @@ import React from "react";
 export default function Dialog({
   children,
   title,
-}: { children: React.ReactNode; title: string }) {
+  buttonTitle,
+  style
+}: { children: React.ReactNode; title: string, buttonTitle: string, style?: React.CSSProperties}) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   return (
     <div>
-      <Button onClick={() => setIsOpen(true)}>{title}</Button>
+      <Button onClick={() => setIsOpen(true)}>{buttonTitle}</Button>
       {isOpen && (
         <>
         <div style={{
@@ -24,6 +26,7 @@ export default function Dialog({
           onClick={() => setIsOpen(false)}
         />
         <Card sx={{
+          ...style,
           position: "fixed",
           top:"50%",
           left: "50%",
@@ -31,7 +34,7 @@ export default function Dialog({
           zIndex: 4,
         }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" className="px-4 py-2">
-              <Typography level="h4">{title}</Typography>
+              <Typography level="h3">{title}</Typography>
               <Button
                 type="button"
                 onClick={() => setIsOpen(false)}

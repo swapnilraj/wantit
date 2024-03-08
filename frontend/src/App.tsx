@@ -3,15 +3,13 @@ import React, { useEffect, useState } from "react";
 import { Sheet, Stack } from "@mui/joy";
 import EventPool from "./EventPool";
 import Header from "./components/Header";
-import {  useProvider } from "@starknet-react/core";
-import { POOL_CLASS_HASH } from "./consts";
+import { FILTER_POOLS, POOL_CLASS_HASH } from "./consts";
 import { Contract } from "./types";
+import PoolCreator from "./PoolCreator";
 
 
 
 function App() {
-  const { provider } = useProvider();
-  provider.getClassByHash(POOL_CLASS_HASH).then(console.log);
   // Store the result of the fetch in a state variable
   const [contractList, setContractList] = useState<string[]>([]);
 
@@ -35,7 +33,7 @@ function App() {
 
 
 
-  const eventPools = contractList.map((contractAddress, index) => {
+  const eventPools = contractList.filter((address) => !FILTER_POOLS.includes(address)).map((contractAddress, index) => {
     return <EventPool key={index} contractAddress={contractAddress} />
   });
 
@@ -47,6 +45,7 @@ function App() {
         {/* <Header /> */}
         <Stack sx={{width: '100%', maxWidth: '1300px'}}>
           {eventPools}
+          <PoolCreator />
         </Stack>
       </Sheet>
     </>

@@ -10,7 +10,7 @@ export default function ConnectModal() {
 
   return (
 
-    <Dialog title="Connect Wallet">
+    <Dialog title="Connect Wallet" buttonTitle="ConnectWallet">
       <Stack justifyContent="center" alignItems="center" spacing={1}>
         {connectors.map((connector: Connector) => {
           return (

@@ -1,12 +1,12 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StarknetIdNavigator } from "starknetid.js";
 // import { useBlock } from "@starknet-react/core";
-import { Box, Button, Divider, Input, Option, Select, Stack, Typography } from "@mui/joy";
+import { Box, Button, CircularProgress, Divider, Input, Option, Select, Stack, Typography } from "@mui/joy";
 import { Event } from "./types";
 import Dialog from "./components/ui/Dialog";
 import { NumericFormat, NumericFormatProps } from 'react-number-format';
-import { IdentityLink } from "./IdentityLink";
-import { useContractRead, useNetwork, useProvider } from "@starknet-react/core";
+import { LinkType, VoyagerLink } from "./VoyagerLink";
+import { useContract, useContractRead, useContractWrite, useNetwork, useProvider } from "@starknet-react/core";
 import { ERC20_ABI, GOERLI_TOKENS, LOADING_EVENT, POOL_ABI } from "./consts";
 import { constants } from "starknet";
 import strk_icon from "./assets/STRK.svg"
@@ -88,25 +88,24 @@ function byteArrayToString(byteArray: { data: bigint[], pending_word: bigint, pe
     return result;
 }
 
-function dec2hex(str: bigint){ // .toString(16) only works up to 2^53
+function dec2hex(str: bigint) { // .toString(16) only works up to 2^53
     const dec = str.toString().split(''), sum = [], hex = [];
     let i, s
-    while(dec.length){
+    while (dec.length) {
         // @ts-expect-error we know we won't overshoot
         s = 1 * dec.shift()
-        for(i = 0; s || i < sum.length; i++){
+        for (i = 0; s || i < sum.length; i++) {
             s += (sum[i] || 0) * 10
             sum[i] = s % 16
             s = (s - sum[i]) / 16
         }
     }
-    while(sum.length){
+    while (sum.length) {
         // @ts-expect-error we know we won't overshoot
         hex.push(sum.pop().toString(16))
     }
     return hex.join('')
 }
-
 
 
 // An eventpool is a collection of liquidity which can permissionlessly be added to.
@@ -127,7 +126,7 @@ function EventPool({ contractAddress }: PoolProps) {
         `0x${dec2hex(chain.id)}` as unknown as constants.StarknetChainId
     );
 
-    const {data: titleData} = useContractRead({
+    const { data: titleData } = useContractRead({
         functionName: "title",
         address: contractAddress,
         abi: POOL_ABI,
@@ -135,11 +134,12 @@ function EventPool({ contractAddress }: PoolProps) {
     })
     if (titleData !== undefined) {
         // @ts-expect-error we know the data format
-        event.title = byteArrayToString(titleData);
+
+        event.title = byteArrayToString(titleData).split("").reverse().join("");
     }
 
     // Get the description
-    const {data: descriptionData} = useContractRead({
+    const { data: descriptionData } = useContractRead({
         functionName: "wish",
         address: contractAddress,
         abi: POOL_ABI,
@@ -152,7 +152,7 @@ function EventPool({ contractAddress }: PoolProps) {
 
     // Get the payouts
     // First we fetch the list of recipients
-    const {data: recipientsData} = useContractRead({
+    const { data: recipientsData } = useContractRead({
         functionName: "recipients",
         address: contractAddress,
         abi: POOL_ABI,
@@ -161,12 +161,12 @@ function EventPool({ contractAddress }: PoolProps) {
     if (recipientsData !== undefined) {
         // @ts-expect-error we know the data format
         event.payouts = recipientsData.map((recipient: bigint) => {
-            return { identity: {address: `0x${recipient.toString(16)}`}, proportion: 1 }
+            return { identity: { address: `0x${recipient.toString(16)}` }, proportion: 1 }
         });
     }
 
     // Then the list of recipient_shares
-    const {data: sharesData} = useContractRead({
+    const { data: sharesData } = useContractRead({
         functionName: "recipient_shares",
         address: contractAddress,
         abi: POOL_ABI,
@@ -180,14 +180,14 @@ function EventPool({ contractAddress }: PoolProps) {
     }
 
     // Get the resolver address (note we only suport the CoordinatorResolutionStrategy for now)
-    const {data: resolverData} = useContractRead({
+    const { data: resolverData } = useContractRead({
         functionName: "oracle",
         address: contractAddress,
         abi: POOL_ABI,
         watch: true,
     })
     if (resolverData !== undefined) {
-        event.resolutionStrategy = {type: "coordinator", coordinator: {address: `0x${resolverData.toString(16)}`}};
+        event.resolutionStrategy = { type: "coordinator", coordinator: { address: `0x${resolverData.toString(16)}` } };
     }
 
     // Get the starknet id of the coordinators and the recipients if thay have one
@@ -196,7 +196,7 @@ function EventPool({ contractAddress }: PoolProps) {
     }
 
     // Get the event pool token balance in ETH and STRK
-    const {data: ethBalance} = useContractRead({
+    const { data: ethBalance } = useContractRead({
         functionName: "balance_of",
         address: GOERLI_TOKENS.ETH,
         abi: ERC20_ABI,
@@ -204,13 +204,13 @@ function EventPool({ contractAddress }: PoolProps) {
         watch: true,
     })
     if (ethBalance !== undefined) {
-        console.log(ethBalance)
+        console.log({ethBalance})
         // @ts-expect-error we know the data format
         event.poolBalances[GOERLI_TOKENS.ETH] = ethBalance;
     }
 
     // Get the event pool token balance in STRK
-    const {data: strkBalance} = useContractRead({
+    const { data: strkBalance } = useContractRead({
         functionName: "balance_of",
         address: GOERLI_TOKENS.STRK,
         abi: ERC20_ABI,
@@ -222,7 +222,35 @@ function EventPool({ contractAddress }: PoolProps) {
         event.poolBalances[GOERLI_TOKENS.STRK] = strkBalance;
     }
 
+    const { contract: ethContract } = useContract({abi: ERC20_ABI, address: GOERLI_TOKENS.ETH});
+    const { contract: strkContract } = useContract({abi: ERC20_ABI, address: GOERLI_TOKENS.STRK});
+
     const [value, setValue] = React.useState('1320');
+
+    const calls = useMemo(() => {
+        const bigVal = BigInt(parseFloat(value || "0") * 10**18);
+        switch(selectedSymbol) {
+            case 'ETH':
+                if (ethContract === undefined) return [];
+                return ethContract.populateTransaction["transfer"]!(contractAddress, {low: bigVal % 2n**251n, high: bigVal / 2n**251n});
+            case 'STRK':
+                if (strkContract === undefined) return [];
+                return strkContract.populateTransaction["transfer"]!(contractAddress, {low: bigVal % 2n**251n, high: bigVal / 2n**251n});
+        }
+    }, [value, contractAddress, selectedSymbol]);
+
+
+	const {
+		writeAsync,
+		data,
+		isPending,
+	} = useContractWrite({
+		calls,
+	});
+
+    console.log({data})
+    console.log({isPending})
+
     const totalProportions = event.payouts.reduce((acc, payout) => acc + payout.proportion, 0);
     let resolutionStrategy;
     switch (event.resolutionStrategy.type) {
@@ -230,7 +258,7 @@ function EventPool({ contractAddress }: PoolProps) {
             resolutionStrategy =
                 <Box>
                     <Typography>This event is managed by an unkown address. Please carefully check the legitimacy of the address.</Typography>
-                    <Typography>Address: <IdentityLink identity={event.resolutionStrategy.coordinator} /></Typography>
+                    <Typography>Address: <VoyagerLink identity={event.resolutionStrategy.coordinator} type={LinkType.Identity}/></Typography>
                 </Box>;
             break;
         case 'UMA':
@@ -242,7 +270,7 @@ function EventPool({ contractAddress }: PoolProps) {
         case 'DAO':
             resolutionStrategy = <Box>
                 <Typography>This event is managed by a DAO. The DAO is a contract controlled by a DAO vote.</Typography>
-                <Typography>DAO Contract: <IdentityLink identity={event.resolutionStrategy.DAO} /></Typography>
+                <Typography>DAO Contract: <VoyagerLink identity={event.resolutionStrategy.DAO} type={LinkType.Identity} /></Typography>
             </Box>;
             break;
     }
@@ -254,23 +282,32 @@ function EventPool({ contractAddress }: PoolProps) {
                 <Box sx={{ fontSize: '16px', color: '#666' }}>{event.description}</Box>
                 <Stack direction="row" spacing={3} alignItems="left">
                     <Stack direction="row" spacing={1} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
-                        <img src={eth_icon} alt="ETH" style={{ verticalAlign: 'middle', width: '20px', height: '30px'}} />
-                        <p>{event.poolBalances[GOERLI_TOKENS.ETH]?.toLocaleString()}</p>
+                        <img src={eth_icon} alt="ETH" style={{ verticalAlign: 'middle', width: '20px', height: '30px' }} />
+                        <p>{(parseFloat(event.poolBalances[GOERLI_TOKENS.ETH]?.toString()) / 10**18 ).toLocaleString(undefined, {maximumFractionDigits: 18})}</p>
                     </Stack>
                     <Stack direction="row" spacing={2} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
-                        <img src={strk_icon} alt="STRK" style={{ verticalAlign: 'middle', width: '30px', height: '30px'}} />
-                        <p>{event.poolBalances[GOERLI_TOKENS.STRK]?.toLocaleString()}</p>
+                        <img src={strk_icon} alt="STRK" style={{ verticalAlign: 'middle', width: '30px', height: '30px' }} />
+                        <p>{(parseFloat(event.poolBalances[GOERLI_TOKENS.STRK]?.toString()) / 10**18 ).toLocaleString(undefined, {maximumFractionDigits: 18})}</p>
                     </Stack>
                 </Stack>
             </Stack>
-            <Dialog title="Believe">
-                <Stack direction="column" spacing={2} justifyContent="space-between" alignItems="center" className="px-4 py-2">
-                    <Box sx={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{event.title}</Box>
+            <Dialog title={event.title} buttonTitle="Believe">
+                <Stack direction="column" spacing={2} justifyContent="space-between" alignItems="left" className="px-4 py-2">
                     <Box sx={{ fontSize: '16px', color: '#666' }}>{event.description}</Box>
+
+                    <Divider />
+                    <Typography level="h4">Total Pool</Typography>
                     <Stack direction="row" spacing={3} alignItems="left">
-                        {/* <Box sx={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>${event.poolSize.value.toLocaleString()}</Box> */}
-                        {/* <Box sx={{ fontSize: '18px', color: '#666' }}>👤 {event.poolSize.quantity.toLocaleString()}</Box> */}
+                        <Stack direction="row" spacing={1} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                            <img src={eth_icon} alt="ETH" style={{ verticalAlign: 'middle', width: '20px', height: '30px' }} />
+                            <p>{(parseFloat(event.poolBalances[GOERLI_TOKENS.ETH]?.toString()) / 10**18 ).toLocaleString(undefined, {maximumFractionDigits: 18})}</p>
+                        </Stack>
+                        <Stack direction="row" spacing={1} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                            <img src={strk_icon} alt="STRK" style={{ verticalAlign: 'middle', width: '30px', height: '30px' }} />
+                            <p>{(parseFloat(event.poolBalances[GOERLI_TOKENS.STRK]?.toString()) / 10**18 ).toLocaleString(undefined, {maximumFractionDigits: 18})}</p>
+                        </Stack>
                     </Stack>
+                    <Typography level="h4">Will you make it happen??</Typography>
                     <Stack direction="row" spacing={3} alignItems="left">
                         <Input
                             value={value}
@@ -294,14 +331,26 @@ function EventPool({ contractAddress }: PoolProps) {
                                 STRK
                             </Option>
                         </Select>
-                        <Button onClick={() => console.log("clicked")}>Send it</Button>
+                        {isPending ? <CircularProgress /> : data == undefined ? 
+                        <Button disabled={!value} onClick={() => writeAsync()}>Send it</Button> :
+                        <VoyagerLink identity={{address: data.transaction_hash}} type={LinkType.Transaction}/>
+                        }
                     </Stack>
                     <Divider />
-                    <Typography level="h4">Beneficiaries</Typography>
+                    <Typography level="h4">Rewards</Typography>
                     <Stack direction="row" spacing={3} alignItems="left">
                         {event.payouts.map((payout, index) => <Stack direction="row" key={index} spacing={3} alignItems="left">
                             <Stack direction="row" spacing={1} alignItems="left">
-                                <IdentityLink identity={payout.identity} />
+                                    <Stack direction="row" spacing={1} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                                        <img src={eth_icon} alt="ETH" style={{ verticalAlign: 'middle', width: '20px', height: '30px' }} />
+                                        <p>{(event.poolBalances[GOERLI_TOKENS.ETH] ? event.poolBalances[GOERLI_TOKENS.ETH] * BigInt(payout.proportion) / 100n : 0).toLocaleString()}</p>
+                                    </Stack>
+                                    <Stack direction="row" spacing={1} sx={{ fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+                                        <img src={strk_icon} alt="STRK" style={{ verticalAlign: 'middle', width: '30px', height: '30px' }} />
+                                        <p>{(event.poolBalances[GOERLI_TOKENS.STRK] ? event.poolBalances[GOERLI_TOKENS.STRK] * BigInt(payout.proportion) / 100n : 0).toLocaleString()}</p>
+                                    </Stack>
+                                    <p>to</p>
+                                <VoyagerLink identity={payout.identity} type={LinkType.Identity}/>
                                 <Typography>{(payout.proportion / totalProportions * 100).toFixed(0) + "/100"}</Typography>
                             </Stack>
                         </Stack>

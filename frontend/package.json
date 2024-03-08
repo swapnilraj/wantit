@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://swapnilraj.github.io/wantit/",
   "scripts": {
+    "predeploy": "bun run build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
@@ -31,6 +34,7 @@
     "autoprefixer": "^10.4.16",
     "eslint": "8.33.0",
     "eslint-plugin-react": "^7.31.4",
+    "gh-pages": "^6.1.1",
     "postcss": "^8.4.31",
     "typescript": "4.9.5",
     "vite": "^4.1.0",
